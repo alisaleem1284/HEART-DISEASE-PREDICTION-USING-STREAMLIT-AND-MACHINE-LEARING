@@ -1,0 +1,50 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+import joblib
+from sklearn.model_selection import train_test_split,cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score,confusion_matrix,classification_report
+from sklearn.preprocessing import StandardScaler
+import warnings 
+warnings.filterwarnings("ignore")
+
+df = pd.read_csv("Heart_disease_cleveland_new.csv")
+df.head()
+df.isnull().sum()
+df.info()
+df.head()
+x = df.drop(columns='target',axis=1)
+y = df['target']
+
+print(x,y)
+
+x_train,x_test, y_train,y_test = train_test_split(x,y,train_size=0.2, stratify=y,random_state=42)
+print(x_train.shape[0])
+print(x_test.shape[0])
+scaler = StandardScaler()
+x_train_scaled = scaler.fit_transform(x_train)
+x_test_scaled = scaler.transform(x_test)
+joblib.dump(scaler,"heart_scaler.pkl")
+model = LogisticRegression(max_iter=1000,random_state=42)
+score = cross_val_score(model,x_train_scaled,y_train,cv=5,scoring ='accuracy')
+print(f"{score.mean():.4f}(+/-{score.std():.4f})")
+model.fit(x_train_scaled,y_train)
+y_train_pred = model.predict(x_train_scaled)
+y_test_pred = model.predict(x_test_scaled)
+
+train_acc = accuracy_score(y_train,y_train_pred)
+
+test_acc  = accuracy_score(y_test,y_test_pred)
+
+print(train_acc)
+print(test_acc)
+print(classification_report(y_test,y_test_pred,target_names=['Healty','Diseases']))
+model_data = {
+    "model":model,
+    "features_names":x.columns.tolist()
+
+}
+joblib.dump(model_data,"heart_disease_model.pkl")
+
